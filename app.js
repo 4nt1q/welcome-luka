@@ -115,8 +115,6 @@ function linkChips(links) {
 const sel = (attrs, options, cur) =>
   `<select ${attrs}>${options.map(([v, l]) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`
 const WHEN = { before: 'Before birth', after: 'After birth' }
-const packedBadge = (i) => `<span class="badge${i.packed ? ' decided' : ''}">${i.packed ? 'Packed' : 'Not packed'}</span>`
-const badge = (i) => `<span class="badge${i.decision === 'decided' ? ' decided' : ''}">${i.decision === 'decided' ? 'Decided' : 'Not decided'}</span>`
 const star = (i) => `<button class="star${i.starred ? ' on' : ''}" data-act="star" data-id="${i.id}" aria-label="${i.starred ? 'Remove from favourites' : 'Add to favourites'}">${i.starred ? '★' : '☆'}</button>`
 const lineTotal = (p) => p.price * p.quantity
 // Sections, then subcategories, follow the fixed lists above; items follow their own `order`.
@@ -154,14 +152,21 @@ function syncTop(path) {
 }
 
 const nameHtml = (i) => `${i.qty ? `<span class="qty">${i.qty} ×</span> ` : ''}${esc(i.name)}`
-const tagsHtml = (i, bagView) => `${bagView || i.section === BAG ? packedBadge(i) : badge(i)}${i.when ? `<span class="badge ${i.when}">${WHEN[i.when]}</span>` : ''}${i.blackFriday ? '<span class="badge bf">Black Friday</span>' : ''}${i.owned ? '<span class="badge have">have ✓</span>' : ''}${agesOf(i).slice(0, 3).map((a) => `<span class="badge">${esc(a)}</span>`).join('')}${agesOf(i).length > 3 ? `<span class="badge" title="${esc(i.age)}">+${agesOf(i).length - 3} more ages</span>` : ''}${i.plan !== 'buy' ? `<span class="badge plan-${i.plan}">${PLANS[i.plan]}</span>` : ''}${i.bag && i.section !== BAG ? '<span class="badge bag">In hospital bag</span>' : ''}${i.verdict ? `<span class="badge verdict-${i.verdict}">${VERDICTS[i.verdict]}</span>` : ''}${i.buyType ? `<span class="badge">${esc(i.buyType)}</span>` : ''}${i.recurring ? '<span class="badge rec">recurring</span>' : ''}`
+// Quiet facts read as one grey line; only what deserves a glance (decided, packed, Black Friday, have) becomes a pill.
+const factsOf = (i, bagView) => [!(bagView || i.section === BAG) && i.when && WHEN[i.when], ...agesOf(i).slice(0, 3), agesOf(i).length > 3 && `+${agesOf(i).length - 3} more ages`,
+  i.buyType, i.recurring && 'recurring', i.plan !== 'buy' && PLANS[i.plan], i.verdict && VERDICTS[i.verdict], i.bag && i.section !== BAG && 'in hospital bag'].filter(Boolean)
+const pillsHtml = (i, bagView, status = true) => {
+  const bag = bagView || i.section === BAG
+  return `${status && (bag ? i.packed : i.decision === 'decided') ? `<span class="badge decided">${bag ? 'Packed' : 'Decided'}</span>` : ''}${i.blackFriday ? '<span class="badge bf">Black Friday</span>' : ''}${i.owned ? '<span class="badge have">have ✓</span>' : ''}`
+}
 
 function card(i, dim, bagView) { // in the hospital bag the status is packed / not packed
+  const more = i.product ? (i.links.length ? `<a class="card-more" href="${esc(safeUrl(i.links[0].url))}" target="_blank" rel="noopener noreferrer">What Maja &amp; Marko bought ↗</a>` : '<span class="card-more">What Maja &amp; Marko bought <i></i></span>') : ''
+  const facts = factsOf(i, bagView).join(' · '), pills = pillsHtml(i, bagView)
   return `<div class="card${dim ? ' dim' : ''}${i.id === ui.openId ? ' on' : ''}" role="button" tabindex="0" data-act="open" data-id="${i.id}">
     <div class="card-top"><span class="card-name">${nameHtml(i)}</span><span class="card-meta">
       ${i.price != null ? `<span class="price">${money(i.price, i.currency)}</span>` : ''}${star(i)}</span></div>
-    ${i.product ? (i.links.length ? `<a class="card-more" href="${esc(safeUrl(i.links[0].url))}" target="_blank" rel="noopener noreferrer">What Maja &amp; Marko bought ↗</a>` : '<span class="card-more">What Maja &amp; Marko bought <i></i></span>') : ''}
-    <div class="badges">${tagsHtml(i, bagView)}</div></div>`
+    ${facts ? `<p class="card-line">${facts}</p>` : ''}${more}${pills ? `<div class="badges">${pills}</div>` : ''}</div>`
 }
 
 function visible(section) {
@@ -440,14 +445,14 @@ const decideBox = () => ui.edit.decide === 'link'
     ? `<div class="havebox"><b>Have you bought it?</b><div class="actions"><button class="btn" data-act="bought-yes">Yes, enter the price</button><button class="btn ghost" data-act="bought-no">Not yet</button></div></div>` : ''
 
 function panel(i) {
-  const bag = i.section === BAG, ref = i.refPurchases?.length
+  const bag = i.section === BAG, ref = i.refPurchases?.length, facts = factsOf(i, bag), pills = pillsHtml(i, bag, false)
   const status = bag ? [['0', 'Not packed', !i.packed], ['1', 'Packed', i.packed]] : [['0', 'Not decided', i.decision !== 'decided'], ['1', 'Decided', i.decision === 'decided']]
   return `<p class="p-eyebrow">${esc(SHORT[i.section] || i.section)} · ${esc(bag ? bagLabel(i.subcategory) : i.subcategory)}</p>
     <div class="p-title"><h2>${nameHtml(i)}</h2>${star(i)}</div>
     ${i.product ? `<p class="p-prod"><small>What Maja &amp; Marko bought</small>${i.links.length ? `<a href="${esc(safeUrl(i.links[0].url))}" target="_blank" rel="noopener noreferrer">${esc(i.product)} ↗</a>` : esc(i.product)}</p>` : ''}
     <p class="p-price">${i.price != null ? `<b>${money(i.price, i.currency)}</b><small>${ref ? 'what Maja and Marko paid' : 'price'}</small>` : '<small>No price yet</small>'}</p>
     ${i.retired ? `<p class="banner">This item is retired. <button class="linkbtn" data-act="toggle-retired" data-id="${i.id}">Restore</button></p>` : ''}
-    <div class="badges p-tags">${tagsHtml(i, bag)}</div>
+    ${facts.length ? `<p class="card-line p-facts">${facts.join(' · ')}</p>` : ''}${pills ? `<div class="badges p-tags">${pills}</div>` : ''}
     <div class="seg" role="group" aria-label="Status">${status.map(([v, t, on]) => `<button data-act="set-status" data-v="${v}" class="${on ? 'on' : ''}">${t}</button>`).join('')}</div>
     ${i.links.length ? `<div class="p-links">${linkChips(i.links)}</div>` : ''}
     ${decideBox()}

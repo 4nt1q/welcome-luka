@@ -66,7 +66,8 @@ h3 { font-size: 14px; margin: 22px 0 8px; font-family: var(--sans); font-weight:
 .card-name { font-weight: 500; } .card-meta { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .price { font-size: 14px; font-weight: 500; color: var(--mute); font-variant-numeric: tabular-nums; }
 .qty { color: var(--mute); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.card-more { align-self: flex-start; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--mute); text-decoration: none; } a.card-more { color: var(--accent-dark); } a.card-more:hover { text-decoration: underline; } .card-more i { width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
+.card-line { margin: 0; font-size: 13px; color: var(--mute); } .card-line::first-letter { text-transform: uppercase; }
+.card-more { display: block; width: fit-content; font-size: 13px; color: var(--mute); text-decoration: none; } a.card-more { color: var(--accent-dark); } a.card-more:hover { text-decoration: underline; } .card-more i { display: inline-block; width: 6px; height: 6px; margin-left: 5px; vertical-align: 1px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
 .p-prod small { display: block; margin-bottom: 2px; font-size: 13px; } .p-prod a { color: var(--accent-dark); text-decoration: none; } .p-prod a:hover { text-decoration: underline; }
 .havebox label { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; font-size: 14px; } .havebox label input { width: 100%; } .havebox .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
@@ -94,8 +95,8 @@ h3 { font-size: 14px; margin: 22px 0 8px; font-family: var(--sans); font-weight:
 .p-title { display: flex; align-items: flex-start; gap: 8px; padding-right: 8px; } .p-title h2 .qty { font-weight: 500; } .p-title h2 { margin: 0; font: 700 26px/1.15 var(--sans); letter-spacing: -.03em; } .p-title .star { margin-top: 3px; }
 .p-prod { margin: 6px 0 0; color: var(--mute); font-size: 15px; }
 .p-price { margin: 18px 0 14px; display: flex; align-items: baseline; gap: 10px; } .p-price b { font-size: 38px; line-height: 1; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; } .p-price small { color: var(--mute); font-size: 14px; }
-.p-tags { margin: 0 0 16px; } /* the very same pills as on the cards */
-.drawer .seg { margin-top: 0; }
+.p-facts { margin: 12px 0 0; } .p-tags { margin: 10px 0 0; } .p-price + .p-facts, .p-price + .p-tags { margin-top: 0; }
+.drawer .seg { margin-top: 16px; }
 .p-links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
 .link { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); background: #fff; color: var(--ink); text-decoration: none; } .link::after { content: "↗"; color: var(--faint); }
 .drawer .add { margin-top: 16px; }
