@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="theme-color" content="#FAFAF8">
+  <title>Luka</title>
+  <link rel="icon" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top" id="top" data-part="lists">
+    <a class="brand" href="#/board">Luka<span>.</span></a>
+    <span class="wk"><i></i><span id="wk"></span></span>
+    <nav class="switch" aria-label="Part"><i class="thumb"></i><a href="#/board" data-p="lists">Lists</a><a href="#/spending" data-p="spend">Spending</a></nav>
+  </header>
+  <div id="app"></div>
+  <div id="overlay">
+    <div class="scrim" data-act="close"></div>
+    <aside id="drawer" class="drawer" role="dialog" aria-label="Item"><div class="drag" id="drag"><div class="grab"></div></div><button class="x" data-act="close" aria-label="Close">✕</button><div id="dc"></div></aside>
+  </div>
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
