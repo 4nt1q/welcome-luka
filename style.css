@@ -24,8 +24,8 @@ h3 { font-size: 14px; margin: 22px 0 8px; font-family: var(--sans); font-weight:
 .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent-dark); margin: 0 0 10px; }
 
 /* pressable things answer the finger at once */
-.fbtn, .star, .add, .btn, .fab, .seg button, .acc-h, .chip, .x { transition: transform 160ms var(--ease-out), background-color 150ms ease; }
-.fbtn:active, .star:active, .add:active, .btn:active, .fab:active, .seg button:active, .chip:active { transform: scale(.97); }
+.when-b, .fbtn, .star, .add, .btn, .fab, .seg button, .acc-h, .chip, .x { transition: transform 160ms var(--ease-out), background-color 150ms ease; }
+.when-b:active, .fbtn:active, .star:active, .add:active, .btn:active, .fab:active, .seg button:active, .chip:active { transform: scale(.97); }
 
 /* header: brand, week, and the one switch that matters */
 .top { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: calc(env(safe-area-inset-top) + 12px) 16px 12px; background: rgba(250,250,248,.82); backdrop-filter: blur(16px) saturate(170%); -webkit-backdrop-filter: blur(16px) saturate(170%); }
@@ -65,7 +65,7 @@ h3 { font-size: 14px; margin: 22px 0 8px; font-family: var(--sans); font-weight:
 .card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
 .card-name { font-weight: 500; } .card-meta { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
 .price { font-size: 14px; font-weight: 500; color: var(--mute); font-variant-numeric: tabular-nums; }
-.qty { color: var(--mute); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.packs { color: var(--mute); font-weight: 400; font-size: .85em; } .qty { color: var(--mute); font-weight: 400; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .card-line { margin: 0; font-size: 13px; color: var(--mute); } .card-line::first-letter { text-transform: uppercase; }
 .card-more { display: block; width: fit-content; font-size: 13px; color: var(--mute); text-decoration: none; } a.card-more { color: var(--accent-dark); } a.card-more:hover { text-decoration: underline; } .card-more i { display: inline-block; width: 6px; height: 6px; margin-left: 5px; vertical-align: 1px; border-right: 1.5px solid currentColor; border-top: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
 .p-prod small { display: block; margin-bottom: 2px; font-size: 13px; } .p-prod a { color: var(--accent-dark); text-decoration: none; } .p-prod a:hover { text-decoration: underline; }
@@ -138,6 +138,11 @@ table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: lef
 .more .ctl { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; } .more .tablewrap { border: 0; }
 .tablewrap { overflow-x: auto; } .tablewrap th, .tablewrap td { padding: 8px 12px; }
 
+.when { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 22px; }
+.when-b { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; } .when-b span { font-size: 13px; color: var(--mute); }
+.when-b b { font: 700 24px/1.1 var(--display); letter-spacing: -.03em; font-variant-numeric: tabular-nums; } .when-b b i { font: 400 13px var(--sans); letter-spacing: 0; color: var(--mute); font-style: normal; } .when-b small { font-size: 13px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.when-b.on { background: var(--ink); border-color: var(--ink); } .when-b.on span, .when-b.on b i, .when-b.on small { color: rgba(255,255,255,.7); } .when-b.on b { color: #fff; }
+@media (min-width: 700px) { .when { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 /* misc */
 .lock { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; padding: 16px; text-align: center; }
 .lock h1 { font-size: 56px; } .lock h1 span { color: var(--accent); }

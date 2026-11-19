@@ -57,7 +57,7 @@ function seedDb() {
     currency: 'GBP',
     items: SEED.items.map((s) => ({
       id: s.key, name: s.name, product: s.product || '', section: s.section, subcategory: s.subcategory,
-      when: s.when || '', packed: false, bag: s.bag || '', bagOrder: s.bagOrder ?? 0, store: s.store || '', verdict: s.verdict || '', blackFriday: !!s.blackFriday, qty: s.qty ?? null, age: s.age || '', plan: s.plan || 'buy', price: s.price ?? null, currency: 'GBP', decision: s.decisionStatus === 'decided' ? 'decided' : 'undecided',
+      when: s.when || '', packed: false, bag: s.bag || '', bagOrder: s.bagOrder ?? 0, store: s.store || '', verdict: s.verdict || '', blackFriday: !!s.blackFriday, qty: s.qty ?? null, perPack: s.perPack ?? null, age: s.age || '', plan: s.plan || 'buy', price: s.price ?? null, currency: 'GBP', decision: s.decisionStatus === 'decided' ? 'decided' : 'undecided',
       buyType: s.buyType || '', recurring: !!s.recurring, owned: !!s.owned, retired: !!s.retired, starred: false,
       links: s.links || [], order: s.order ?? 1000, note: s.note || '',
       comments: [], priceLog: [],
@@ -77,6 +77,7 @@ function migrate() {
     if (i.when === undefined) i.when = s?.when || ''
     if (i.blackFriday === undefined) i.blackFriday = !!s?.blackFriday
     if (i.refPurchases === undefined) i.refPurchases = (s?.purchases || []).map((p) => ({ id: uid(), currency: 'GBP', ...p }))
+    if (i.perPack === undefined) i.perPack = s?.perPack ?? null // lists saved before "items per pack" existed
     if (i.packed === undefined) i.packed = false
     if (i.bag === undefined) { i.bag = s?.bag || ''; i.bagOrder = s?.bagOrder ?? 0 }
     if (i.store === undefined) { i.store = s?.store || ''; i.verdict = '' }
@@ -134,7 +135,7 @@ function groupBySub(items, section) {
 
 // ---------- state ----------
 const ui = {
-  filters: { search: '', decision: 'all', packed: 'all', plan: 'all', age: 'all', verdict: 'all', store: 'all', when: 'all', buy: 'all', recurring: 'no', owned: 'all', fav: false, bf: false },
+  filters: { timing: 'all', search: '', decision: 'all', packed: 'all', plan: 'all', age: 'all', verdict: 'all', store: 'all', when: 'all', buy: 'all', recurring: 'no', owned: 'all', fav: false, bf: false },
   sec: SECTIONS[0], open: new Set(), pOpen: new Set(), filtersOpen: false, addTo: '', openId: null, adding: false, // sec: the list on show; open: subcategories the reader has opened (everything starts closed)
   edit: { purchase: null },
   spend: { who: 'mia', currency: null, range: 'all', section: 'all', dim: 'section', adding: false, opts: false, all: false },
@@ -151,7 +152,9 @@ function syncTop(path) {
   $('#wk').textContent = `Week ${weekNow()} · ${Math.max(0, Math.ceil((DUE - Date.now()) / WEEK_MS))} to go`
 }
 
-const nameHtml = (i) => `${i.qty ? `<span class="qty">${i.qty} ×</span> ` : ''}${esc(i.name)}`
+// Qty is the number of ITEMS. "Items per pack" says how they come, so 3 sleepsuits bought as one 3-pack read "3 × … (1 pack of 3)".
+const packsOf = (i) => (i.qty && i.perPack > 1 ? ` <span class="packs">(${Math.ceil(i.qty / i.perPack)} pack${Math.ceil(i.qty / i.perPack) === 1 ? '' : 's'} of ${i.perPack})</span>` : '')
+const nameHtml = (i) => `${i.qty ? `<span class="qty">${i.qty} ×</span> ` : ''}${esc(i.name)}${packsOf(i)}`
 // Quiet facts read as one grey line; only what deserves a glance (decided, packed, Black Friday, have) becomes a pill.
 const factsOf = (i, bagView) => [!(bagView || i.section === BAG) && i.when && WHEN[i.when], ...agesOf(i).slice(0, 3), agesOf(i).length > 3 && `+${agesOf(i).length - 3} more ages`,
   i.buyType, i.recurring && 'recurring', i.plan !== 'buy' && PLANS[i.plan], i.verdict && VERDICTS[i.verdict], i.bag && i.section !== BAG && 'in hospital bag'].filter(Boolean)
@@ -174,6 +177,7 @@ function visible(section) {
   return db.items.filter((i) => inView(i, section) && !i.retired
     && (section === BAG ? f.packed === 'all' || (f.packed === 'yes') === !!i.packed : f.decision === 'all' || i.decision === f.decision)
     && (f.when === 'all' || i.when === f.when)
+    && (f.timing === 'all' || needBucket(i) === f.timing)
     && (f.plan === 'all' || i.plan === f.plan)
     && (f.verdict === 'all' || i.verdict === f.verdict)
     && (f.store === 'all' || i.store === f.store)
@@ -191,9 +195,9 @@ const acc = (key, head, body, cls) => {
   const on = (key.startsWith('p:') ? ui.pOpen : ui.open).has(key)
   return `<div class="acc ${cls}${on ? ' open' : ''}"><button class="acc-h" data-act="toggle" data-key="${esc(key)}" aria-expanded="${on}">${head}<i class="chev"></i></button><div class="acc-p"><div${on ? '' : ' inert'}>${body}</div></div></div>`
 }
-const groupHtml = (section, sub, its) => acc(`${section}|${sub}`, `<span class="name">${esc(sub)}</span><span class="count">${its.length}</span>`, `<div class="grid">${its.map((i) => card(i, false, section === BAG)).join('')}</div>`, 'sub')
+const groupHtml = (section, sub, its) => acc(`${section}|${sub}`, `<span class="name">${esc(sub)}</span><span class="count">${ui.filters.timing === 'all' ? its.length : `${itemsOf(its)} items`}</span>`, `<div class="grid">${its.map((i) => card(i, false, section === BAG)).join('')}</div>`, 'sub')
 const FILTER_KEYS = ['decision', 'packed', 'plan', 'age', 'verdict', 'store', 'when', 'buy', 'owned']
-const filtersActive = () => { const f = ui.filters; return !!f.search.trim() || f.fav || f.bf || f.recurring === 'yes' || FILTER_KEYS.some((k) => f[k] !== 'all') }
+const filtersActive = () => { const f = ui.filters; return f.timing !== 'all' || !!f.search.trim() || f.fav || f.bf || f.recurring === 'yes' || FILTER_KEYS.some((k) => f[k] !== 'all') }
 function openMatches() { // while searching or filtering, open whatever has results so nothing is hidden
   if (filtersActive()) groupBySub(visible(ui.sec), ui.sec).forEach(([sub]) => ui.open.add(`${ui.sec}|${sub}`))
 }
@@ -211,9 +215,10 @@ function list() {
   }).join('')
 }
 function listHead() {
-  const all = db.items.filter((i) => inView(i, ui.sec) && !i.retired), n = visible(ui.sec).length
+  const shown = visible(ui.sec), n = shown.length, all = db.items.filter((i) => inView(i, ui.sec) && !i.retired)
+  const cost = shown.reduce((c, i) => c + (i.currency === db.currency && i.price != null ? i.price : 0), 0)
   const done = all.filter((i) => (ui.sec === BAG ? i.packed : i.decision === 'decided')).length
-  return `<h1>${esc(ui.sec)}</h1><p class="meta">${n} thing${n === 1 ? '' : 's'} shown · ${done} of ${all.length} ${ui.sec === BAG ? 'packed' : 'decided'}</p>`
+  return `<h1>${esc(ui.sec)}</h1><p class="meta">${n} product${n === 1 ? '' : 's'} · ${itemsOf(shown)} items · ${money(cost, db.currency, 0)}${ui.filters.timing === 'all' ? ` · ${done} of ${all.length} ${ui.sec === BAG ? 'packed' : 'decided'}` : ''}</p>`
 }
 
 let appliedHash = null
@@ -226,7 +231,7 @@ function listCol() { // everything that belongs to the list on show, so switchin
   if (f.store !== 'all' && !stores.includes(f.store)) f.store = 'all'
   const fs = (key, opts) => sel(`data-chg="filter" data-key="${key}"`, opts, f[key])
   const n = FILTER_KEYS.filter((k) => f[k] !== 'all').length + (f.recurring === 'yes') + f.fav + f.bf
-  return `<div id="lhead">${listHead()}</div>
+  return `${whenBar()}<div id="lhead">${listHead()}</div>
     <div class="tools"><input id="search" type="search" placeholder="Search this list" value="${esc(f.search)}" aria-label="Search this list">
     <button class="fbtn" data-act="filters-toggle" aria-expanded="${ui.filtersOpen}">Filters${n ? ` · ${n}` : ''}</button></div>
     <div class="fpanel" id="fpanel"${ui.filtersOpen ? '' : ' hidden'}>
@@ -261,6 +266,26 @@ function retiredPage() {
 }
 
 // ---------- spending ----------
+// When each item is needed: before the birth, in the first 3 months, or later. Solids and safety items come after 3 months.
+const LATER = ['Solids (6 months onward)', 'Safety']
+const startMonth = (i) => { const a = agesOf(i)[0] || ''; return /^(newborn|up to)/i.test(a) ? 0 : Number((a.match(/\d+/) || [0])[0]) }
+const needBucket = (i) => (i.when === 'before' ? 'before' : i.when === 'after' ? (LATER.includes(i.subcategory) || startMonth(i) >= 3 ? 'later' : 'early') : null)
+// Items and cost per time, for the "when" bar on the Lists page. One-off or recurring follows the list's own filter.
+function needTotals(cur) {
+  const f = ui.filters, t = { all: { n: 0, cost: 0 }, before: { n: 0, cost: 0 }, early: { n: 0, cost: 0 }, later: { n: 0, cost: 0 } }
+  for (const i of db.items) {
+    if (i.retired || i.plan !== 'buy' || !(f.bf || i.section === BAG || (f.recurring === 'yes' ? i.recurring : !i.recurring))) continue
+    for (const k of ['all', needBucket(i)]) if (k) { t[k].n += i.qty || 1; if (i.currency === cur && i.price != null) t[k].cost += i.price }
+  }
+  return t
+}
+const itemsOf = (list) => list.reduce((n, i) => n + (i.qty || 1), 0)
+const WHEN_BAR = [['all', 'Everything'], ['before', 'Before the birth'], ['early', 'First 3 months'], ['later', 'After 3 months']]
+function whenBar() {
+  const t = needTotals(db.currency)
+  return `<div class="when" role="group" aria-label="When you need it">${WHEN_BAR.map(([k, label]) => `<button class="when-b${ui.filters.timing === k ? ' on' : ''}" data-act="timing" data-v="${k}" aria-pressed="${ui.filters.timing === k}"><span>${label}</span><b>${t[k].n}<i> items</i></b><small>${money(t[k].cost, db.currency, 0)}</small></button>`).join('')}</div>`
+}
+
 function spending() {
   const s = ui.spend, cur = s.currency || db.currency
   const ref = REF[s.who] // whose spending: Mia's own tracker, or the read-only Matiss reference
@@ -544,6 +569,11 @@ const actions = {
     redrawRail(); $('#lcol').innerHTML = listCol(); renderOverlay(true)
     $('#lcol').classList.remove('enter'); void $('#lcol').offsetWidth; $('#lcol').classList.add('enter')
     el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); scrollTo(0, 0)
+  },
+  timing: (el) => { // if the list on show has nothing for that time, move to the first list that has
+    ui.filters.timing = el.dataset.v
+    if (!visible(ui.sec).length) ui.sec = SECTIONS.find((x) => visible(x).length) || ui.sec
+    redrawList()
   },
   'filters-toggle': (el) => { const p = $('#fpanel'); p.hidden = !p.hidden; ui.filtersOpen = !p.hidden; el.setAttribute('aria-expanded', ui.filtersOpen) },
   'spend-who': (el) => { ui.spend.who = el.dataset.v; ui.spend.adding = false; render2() },
